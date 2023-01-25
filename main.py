@@ -6,8 +6,8 @@ import random
 
 FPS = 60
 clock = pygame.time.Clock()
-SCREEN_WIDTH = 1000
-SCREEN_HEIGHT = 1000
+SCREEN_WIDTH = 700
+SCREEN_HEIGHT = 700
 
 
 class Panel:
