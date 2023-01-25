@@ -2,12 +2,12 @@ from typing import *
 import sys
 import pygame
 import random
-import time
+
 
 FPS = 60
 clock = pygame.time.Clock()
-SCREEN_WIDTH = 700
-SCREEN_HEIGHT = 700
+SCREEN_WIDTH = 1000
+SCREEN_HEIGHT = 1000
 
 
 class Panel:
@@ -31,6 +31,7 @@ class Borad:
         self.line_width = self.size // 40
         self.circle_radius = int(self.size / 3 - self.line_width * 2) // 2
         self.is_status_changed = False
+        self.last_tick = pygame.time.get_ticks()
 
         if random.randint(0, 1) == 0:
             self.player_shape = 'o'
@@ -83,7 +84,47 @@ class Borad:
                                                                    (self.size / 3))] = self.player_shape
 
                     self.is_status_changed = True
+
                     break
+
+    def get_winner(self):
+        # vertical
+        for i in range(3):
+            if self.matrix[i][0] != '':
+                prev_shape = self.matrix[i][0]
+
+                for j in range(1, 3):
+                    if prev_shape != self.matrix[i][j]:
+                        break
+                else:
+                    return prev_shape
+
+        # horizental
+        for i in range(3):
+            if self.matrix[0][i] != '':
+                prev_shape = self.matrix[0][i]
+
+                for j in range(1, 3):
+                    if prev_shape != self.matrix[j][i]:
+                        break
+                else:
+                    return prev_shape
+
+        # left-top to right-bottom
+        if self.matrix[0][0] != '':
+            prev_shape = self.matrix[0][0]
+
+            if prev_shape == self.matrix[1][1] == self.matrix[2][2]:
+                return prev_shape
+
+        # right-top to left-bottom
+        if self.matrix[2][0] != '':
+            prev_shape = self.matrix[2][0]
+
+            if prev_shape == self.matrix[1][1] == self.matrix[0][2]:
+                return prev_shape
+
+        return None
 
     def ai(self):
         self.matrix[random.randint(0, 2)][random.randint(0, 2)] = self.ai_shape
@@ -101,13 +142,15 @@ class Borad:
 
     def update(self, events):
         if self.turn == self.ai_shape:
-            time.sleep(0.5)
-            self.ai()
+            # delay 500ms
+            if pygame.time.get_ticks() - self.last_tick >= 500:
+                self.ai()
         else:
             self.get_input(events)
 
         if self.is_status_changed:
             self.change_turn()
+            self.last_tick = pygame.time.get_ticks()
 
         self.is_status_changed = False
 
@@ -116,6 +159,9 @@ def main() -> None:
     pygame.init()
     screen_surf = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
     borad = Borad(SCREEN_WIDTH, (0, 0))
+    winner_panel = Panel((int(SCREEN_WIDTH / 2 - SCREEN_WIDTH / 2.5),
+                         int(SCREEN_HEIGHT / 2 - SCREEN_WIDTH / 14)), int(SCREEN_WIDTH / 5), (30, 155, 100), None)
+    last_tick = pygame.time.get_ticks()
 
     borad.draw(screen_surf)
     pygame.display.update()
@@ -125,16 +171,28 @@ def main() -> None:
 
         for event in events:
             if event.type == pygame.QUIT:
+                print('bye~')
                 pygame.quit()
                 sys.exit()
 
         screen_surf.fill((0, 0, 0))
 
-        borad.update(events)
-        borad.draw(screen_surf)
+        if borad.get_winner() != None:
+            borad.draw(screen_surf)
+            winner_panel.draw(screen_surf, f'WINNER : {borad.turn}')
+
+            # delay 3s
+            if pygame.time.get_ticks() - last_tick >= 3000:
+                borad = Borad(SCREEN_WIDTH, (0, 0))
+        else:
+            borad.update(events)
+            borad.draw(screen_surf)
+
+            last_tick = pygame.time.get_ticks()
 
         pygame.display.update()
         clock.tick()
 
 
-main()
+if __name__ == '__main__':
+    main()
