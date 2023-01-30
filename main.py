@@ -3,11 +3,10 @@ import sys
 import pygame
 import random
 
-
 FPS = 60
 clock = pygame.time.Clock()
-SCREEN_WIDTH = 700
-SCREEN_HEIGHT = 700
+SCREEN_WIDTH = 600
+SCREEN_HEIGHT = 600
 
 
 class Panel:
@@ -15,18 +14,18 @@ class Panel:
         self.pos = pos
         self.font_size = font_size
         self.font_color = font_color
-        if font == None:
+        if font is None:
             self.font = pygame.font.SysFont(None, font_size)
 
-    def draw(self, surf:                    pygame.Surface, str: str) -> None:
-        surf.blit(self.font.render(str, True, self.font_color), self.pos)
+    def draw(self, surf: pygame.Surface, sentence: str) -> None:
+        surf.blit(self.font.render(sentence, True, self.font_color), self.pos)
 
 
-class Borad:
+class Board:
     def __init__(self, size: int, pos: Tuple[int, int]) -> None:
         self.size = size
         self.pos = pos
-        self.matrix = [[''] * self.size for i in range(self.size)]
+        self.matrix = [[''] * self.size for _ in range(self.size)]
         self.surf = pygame.Surface((size, size))
         self.line_width = self.size // 40
         self.circle_radius = int(self.size / 3 - self.line_width * 2) // 2
@@ -48,7 +47,7 @@ class Borad:
     def draw(self, dest_surf: pygame.Surface) -> None:
         self.surf.fill((255, 255, 255))
 
-        # horizental lines
+        # horizontal lines
         for i in range(0, 4):
             pygame.draw.line(self.surf, (0, 0, 0), (0, int(
                 i * (self.size / 3))), (self.size, int(i * (self.size / 3))), self.line_width)
@@ -56,9 +55,9 @@ class Borad:
         # vertical lines
         for i in range(0, 4):
             pygame.draw.line(self.surf, (0, 0, 0), (int(
-                i * (self.size / 3)), 0),  (int(i * (self.size / 3)), self.size), self.line_width)
+                i * (self.size / 3)), 0), (int(i * (self.size / 3)), self.size), self.line_width)
 
-        # draw borad
+        # draw board
         for i in range(3):
             for j in range(3):
                 if self.matrix[i][j] == 'o':
@@ -67,12 +66,17 @@ class Borad:
                                         j * (self.size // 3) + self.circle_radius + self.line_width),
                                        self.circle_radius, self.line_width)
                 elif self.matrix[i][j] == 'x':
-                    pygame.draw.line(self.surf, (0, 0, 255), ((i * (self.size // 3) + self.line_width, j * (self.size // 3) + self.line_width)), ((
-                        i + 1) * (self.size // 3) - self.line_width, (j + 1) * (self.size // 3) - self.line_width), self.line_width)
-                    pygame.draw.line(self.surf, (0, 0, 255), (((i+1) * (self.size // 3) - self.line_width, j * (self.size // 3) + self.line_width)), (
-                        i * (self.size // 3) + self.line_width, (j + 1) * (self.size // 3) - self.line_width), self.line_width)
+                    pygame.draw.line(self.surf, (0, 0, 255),
+                                     (i * (self.size // 3) + self.line_width, j * (self.size // 3) + self.line_width),
+                                     ((
+                                              i + 1) * (self.size // 3) - self.line_width,
+                                      (j + 1) * (self.size // 3) - self.line_width), self.line_width)
+                    pygame.draw.line(self.surf, (0, 0, 255), (
+                        ((i + 1) * (self.size // 3) - self.line_width, j * (self.size // 3) + self.line_width)), (
+                                         i * (self.size // 3) + self.line_width,
+                                         (j + 1) * (self.size // 3) - self.line_width), self.line_width)
 
-        dest_surf.blit(self.surf, (self.pos))
+        dest_surf.blit(self.surf, self.pos)
 
     def get_input(self, events):
         for event in events:
@@ -99,7 +103,7 @@ class Borad:
                 else:
                     return prev_shape
 
-        # horizental
+        # horizontal
         for i in range(3):
             if self.matrix[0][i] != '':
                 prev_shape = self.matrix[0][i]
@@ -158,12 +162,12 @@ class Borad:
 def main() -> None:
     pygame.init()
     screen_surf = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
-    borad = Borad(SCREEN_WIDTH, (0, 0))
+    board = Board(SCREEN_WIDTH, (0, 0))
     winner_panel = Panel((int(SCREEN_WIDTH / 2 - SCREEN_WIDTH / 2.5),
-                         int(SCREEN_HEIGHT / 2 - SCREEN_WIDTH / 14)), int(SCREEN_WIDTH / 5), (30, 155, 100), None)
+                          int(SCREEN_HEIGHT / 2 - SCREEN_WIDTH / 14)), int(SCREEN_WIDTH / 5), (30, 155, 100), None)
     last_tick = pygame.time.get_ticks()
 
-    borad.draw(screen_surf)
+    board.draw(screen_surf)
     pygame.display.update()
 
     while True:
@@ -177,16 +181,16 @@ def main() -> None:
 
         screen_surf.fill((0, 0, 0))
 
-        if borad.get_winner() != None:
-            borad.draw(screen_surf)
-            winner_panel.draw(screen_surf, f'WINNER : {borad.turn}')
+        if (winner := board.get_winner()) is not None:
+            board.draw(screen_surf)
+            winner_panel.draw(screen_surf, f'WINNER : {winner}')
 
             # delay 3s
             if pygame.time.get_ticks() - last_tick >= 3000:
-                borad = Borad(SCREEN_WIDTH, (0, 0))
+                board = Board(SCREEN_WIDTH, (0, 0))
         else:
-            borad.update(events)
-            borad.draw(screen_surf)
+            board.update(events)
+            board.draw(screen_surf)
 
             last_tick = pygame.time.get_ticks()
 
