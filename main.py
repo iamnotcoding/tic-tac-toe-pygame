@@ -1,3 +1,4 @@
+import time
 from typing import *
 import sys
 import pygame
@@ -7,10 +8,16 @@ FPS = 60
 clock = pygame.time.Clock()
 SCREEN_WIDTH = 600
 SCREEN_HEIGHT = 600
+SCREEN_SURF = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
 
 
 class Panel:
-    def __init__(self, pos: Tuple[int, int], font_size: int, font_color: Tuple[int, int, int], font=None) -> None:
+
+    def __init__(self,
+                 pos: Tuple[int, int],
+                 font_size: int,
+                 font_color: Tuple[int, int, int],
+                 font=None) -> None:
         self.pos = pos
         self.font_size = font_size
         self.font_color = font_color
@@ -22,10 +29,11 @@ class Panel:
 
 
 class Board:
+
     def __init__(self, size: int, pos: Tuple[int, int]) -> None:
         self.size = size
         self.pos = pos
-        self.matrix = [[''] * self.size for _ in range(self.size)]
+        self.matrix = [[''] * 3 for _ in range(3)]
         self.surf = pygame.Surface((size, size))
         self.line_width = self.size // 40
         self.circle_radius = int(self.size / 3 - self.line_width * 2) // 2
@@ -49,32 +57,43 @@ class Board:
 
         # horizontal lines
         for i in range(0, 4):
-            pygame.draw.line(self.surf, (0, 0, 0), (0, int(
-                i * (self.size / 3))), (self.size, int(i * (self.size / 3))), self.line_width)
+            pygame.draw.line(self.surf, (0, 0, 0),
+                             (0, int(i * (self.size / 3))),
+                             (self.size, int(i * (self.size / 3))),
+                             self.line_width)
 
         # vertical lines
         for i in range(0, 4):
-            pygame.draw.line(self.surf, (0, 0, 0), (int(
-                i * (self.size / 3)), 0), (int(i * (self.size / 3)), self.size), self.line_width)
+            pygame.draw.line(self.surf, (0, 0, 0),
+                             (int(i * (self.size / 3)), 0),
+                             (int(i * (self.size / 3)), self.size),
+                             self.line_width)
 
         # draw board
         for i in range(3):
             for j in range(3):
                 if self.matrix[i][j] == 'o':
-                    pygame.draw.circle(self.surf, (255, 0, 0),
-                                       (i * (self.size // 3) + self.circle_radius + self.line_width,
-                                        j * (self.size // 3) + self.circle_radius + self.line_width),
-                                       self.circle_radius, self.line_width)
+                    pygame.draw.circle(
+                        self.surf, (255, 0, 0),
+                        (i * (self.size // 3) + self.circle_radius +
+                         self.line_width, j * (self.size // 3) +
+                         self.circle_radius + self.line_width),
+                        self.circle_radius, self.line_width)
                 elif self.matrix[i][j] == 'x':
-                    pygame.draw.line(self.surf, (0, 0, 255),
-                                     (i * (self.size // 3) + self.line_width, j * (self.size // 3) + self.line_width),
-                                     ((
-                                              i + 1) * (self.size // 3) - self.line_width,
-                                      (j + 1) * (self.size // 3) - self.line_width), self.line_width)
-                    pygame.draw.line(self.surf, (0, 0, 255), (
-                        ((i + 1) * (self.size // 3) - self.line_width, j * (self.size // 3) + self.line_width)), (
-                                         i * (self.size // 3) + self.line_width,
-                                         (j + 1) * (self.size // 3) - self.line_width), self.line_width)
+                    pygame.draw.line(
+                        self.surf, (0, 0, 255),
+                        (i * (self.size // 3) + self.line_width, j *
+                         (self.size // 3) + self.line_width),
+                        ((i + 1) * (self.size // 3) - self.line_width,
+                         (j + 1) * (self.size // 3) - self.line_width),
+                        self.line_width)
+                    pygame.draw.line(
+                        self.surf, (0, 0, 255),
+                        (((i + 1) * (self.size // 3) - self.line_width, j *
+                          (self.size // 3) + self.line_width)),
+                        (i * (self.size // 3) + self.line_width,
+                         (j + 1) * (self.size // 3) - self.line_width),
+                        self.line_width)
 
         dest_surf.blit(self.surf, self.pos)
 
@@ -82,12 +101,13 @@ class Board:
         for event in events:
             if event.type == pygame.MOUSEBUTTONDOWN:
                 if event.button == 1:
-                    pos = pygame.mouse.get_pos()
+                    x, y = pygame.mouse.get_pos()
+                    m_x, m_y = int(x / (self.size / 3)), int(y /
+                                                             (self.size / 3))
 
-                    self.matrix[int(pos[0] / (self.size / 3))][int(pos[1] /
-                                                                   (self.size / 3))] = self.player_shape
-
-                    self.is_status_changed = True
+                    if self.matrix[m_x][m_y] == '':
+                        self.matrix[m_x][m_y] = self.turn
+                        self.is_status_changed = True
 
                     break
 
@@ -128,10 +148,65 @@ class Board:
             if prev_shape == self.matrix[1][1] == self.matrix[0][2]:
                 return prev_shape
 
+        is_there_blank_space = False
+
+        for i in range(3):
+            for j in range(3):
+                if self.matrix[i][j] == '':
+                    is_there_blank_space = True
+
+        if not is_there_blank_space:
+            return 'd'
+
         return None
 
+    def minimax(self, depth: int, is_maximizing: bool) -> int:
+        scores = []
+        winner = self.get_winner()
+
+        if winner == self.turn:
+            return 1
+        elif winner == self.get_reversed_turn():
+            return -1
+        elif winner == 'd':
+            return 0
+
+        if depth == 0:
+            return 0
+
+        for i in range(3):
+            for j in range(3):
+                if self.matrix[i][j] == '':
+                    self.matrix[i][
+                        j] = self.turn if is_maximizing else self.get_reversed_turn(
+                        )
+
+                    scores.append(self.minimax(depth - 1, not is_maximizing))
+
+                    self.matrix[i][j] = ''
+
+        # print(scores)
+
+        return max(scores) if is_maximizing else min(scores)
+
     def ai(self):
-        self.matrix[random.randint(0, 2)][random.randint(0, 2)] = self.ai_shape
+        optimal_x, optimal_y = 0, 0
+        max_val = -9999999
+
+        for i in range(3):
+            for j in range(3):
+                if self.matrix[i][j] == '':
+                    self.matrix[i][j] = self.turn
+
+                    r = self.minimax(-1, False)
+
+                    if max_val < r:
+                        max_val = r
+                        optimal_x, optimal_y = i, j
+
+                    self.matrix[i][j] = ''
+
+        self.matrix[optimal_x][optimal_y] = self.turn
 
         self.is_status_changed = True
 
@@ -161,13 +236,13 @@ class Board:
 
 def main() -> None:
     pygame.init()
-    screen_surf = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
     board = Board(SCREEN_WIDTH, (0, 0))
     winner_panel = Panel((int(SCREEN_WIDTH / 2 - SCREEN_WIDTH / 2.5),
-                          int(SCREEN_HEIGHT / 2 - SCREEN_WIDTH / 14)), int(SCREEN_WIDTH / 5), (30, 155, 100), None)
+                          int(SCREEN_HEIGHT / 2 - SCREEN_WIDTH / 14)),
+                         int(SCREEN_WIDTH / 5), (30, 155, 100), None)
     last_tick = pygame.time.get_ticks()
 
-    board.draw(screen_surf)
+    board.draw(SCREEN_SURF)
     pygame.display.update()
 
     while True:
@@ -179,18 +254,22 @@ def main() -> None:
                 pygame.quit()
                 sys.exit()
 
-        screen_surf.fill((0, 0, 0))
+        SCREEN_SURF.fill((0, 0, 0))
 
         if (winner := board.get_winner()) is not None:
-            board.draw(screen_surf)
-            winner_panel.draw(screen_surf, f'WINNER : {winner}')
+            board.draw(SCREEN_SURF)
+
+            if winner == 'd':
+                winner_panel.draw(SCREEN_SURF, '       DRAW')
+            else:
+                winner_panel.draw(SCREEN_SURF, f'WINNER : {winner}')
 
             # delay 3s
             if pygame.time.get_ticks() - last_tick >= 3000:
                 board = Board(SCREEN_WIDTH, (0, 0))
         else:
             board.update(events)
-            board.draw(screen_surf)
+            board.draw(SCREEN_SURF)
 
             last_tick = pygame.time.get_ticks()
 
