@@ -16,6 +16,8 @@ SCREEN_SURF = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
 STONE_SOUND = pygame.mixer.Sound('stone-dropping.wav')
 
 IS_THERE_SOUND = True
+LEVEL = 1  # The max level is -1. Other levels except for 0 is meaningless
+
 
 class Panel:
 
@@ -179,6 +181,7 @@ class Board:
             return 0
 
         if depth == 0:
+            print('the depth is 0')
             return 0
 
         if is_maximizing:
@@ -232,7 +235,7 @@ class Board:
                 if self.matrix[i][j] == '':
                     self.matrix[i][j] = self.turn
 
-                    r = self.minimax(-1, -99999, 99999, False)
+                    r = self.minimax(LEVEL, -99999, 99999, False)
 
                     if max_val < r:
                         max_val = r
@@ -295,10 +298,12 @@ def main() -> None:
         if (winner := board.get_winner()) is not None:
             board.draw(SCREEN_SURF)
 
-            if winner == 'd':
-                winner_panel.draw(SCREEN_SURF, '     DRAW')
+            if winner == board.player_shape:
+                winner_panel.draw(SCREEN_SURF, ' YOU WIN!')
+            elif winner == board.ai_shape:
+                winner_panel.draw(SCREEN_SURF, ' YOU LOSE!')
             else:
-                winner_panel.draw(SCREEN_SURF, f'WINNER : {winner}')
+                winner_panel.draw(SCREEN_SURF, '     DRAW')
 
             # delay 3s
             if pygame.time.get_ticks() - last_tick >= 3000:
