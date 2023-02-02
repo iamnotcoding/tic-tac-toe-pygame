@@ -1,3 +1,4 @@
+import math
 import time
 from typing import *
 import sys
@@ -160,8 +161,7 @@ class Board:
 
         return None
 
-    def minimax(self, depth: int, is_maximizing: bool) -> int:
-        scores = []
+    def minimax(self, depth: int, alpha: int, beta: int, is_maximizing: bool) -> int:
         winner = self.get_winner()
 
         if winner == self.turn:
@@ -174,31 +174,58 @@ class Board:
         if depth == 0:
             return 0
 
-        for i in range(3):
-            for j in range(3):
-                if self.matrix[i][j] == '':
-                    self.matrix[i][
-                        j] = self.turn if is_maximizing else self.get_reversed_turn(
-                        )
+        if is_maximizing:
+            max_evel = -99999
 
-                    scores.append(self.minimax(depth - 1, not is_maximizing))
+            for i in range(3):
+                for j in range(3):
+                    if self.matrix[i][j] == '':
+                        self.matrix[i][
+                            j] = self.turn
 
-                    self.matrix[i][j] = ''
+                        evel = self.minimax(depth - 1, alpha, beta, not is_maximizing)
 
-        # print(scores)
+                        self.matrix[i][j] = ''
 
-        return max(scores) if is_maximizing else min(scores)
+                        max_evel = max(max_evel, evel)
+
+                        alpha = max(alpha, evel)
+
+                        if beta <= alpha:
+                            break
+
+            return max_evel
+        else:
+            min_evel = 99999
+
+            for i in range(3):
+                for j in range(3):
+                    if self.matrix[i][j] == '':
+                        self.matrix[i][j] = self.get_reversed_turn()
+
+                        evel = self.minimax(depth - 1, alpha, beta, not is_maximizing)
+
+                        self.matrix[i][j] = ''
+
+                        min_evel = min(min_evel, evel)
+
+                        beta = min(beta, evel)
+
+                        if beta <= alpha:
+                            break
+
+            return min_evel
 
     def ai(self):
         optimal_x, optimal_y = 0, 0
-        max_val = -9999999
+        max_val = -99999
 
         for i in range(3):
             for j in range(3):
                 if self.matrix[i][j] == '':
                     self.matrix[i][j] = self.turn
 
-                    r = self.minimax(-1, False)
+                    r = self.minimax(-1, -99999, 99999, False)
 
                     if max_val < r:
                         max_val = r
