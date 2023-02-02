@@ -5,12 +5,17 @@ import sys
 import pygame
 import random
 
+pygame.init()
+pygame.mixer.init()
+
 FPS = 60
 clock = pygame.time.Clock()
 SCREEN_WIDTH = 600
 SCREEN_HEIGHT = 600
 SCREEN_SURF = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
+STONE_SOUND = pygame.mixer.Sound('stone-dropping.wav')
 
+IS_THERE_SOUND = True
 
 class Panel:
 
@@ -110,6 +115,8 @@ class Board:
                         self.matrix[m_x][m_y] = self.turn
                         self.is_status_changed = True
 
+                        if IS_THERE_SOUND:
+                            STONE_SOUND.play()
                     break
 
     def get_winner(self):
@@ -237,6 +244,9 @@ class Board:
 
         self.is_status_changed = True
 
+        if IS_THERE_SOUND:
+            STONE_SOUND.play()
+
     def get_reversed_turn(self):
         if self.turn == 'o':
             return 'x'
@@ -262,7 +272,6 @@ class Board:
 
 
 def main() -> None:
-    pygame.init()
     board = Board(SCREEN_WIDTH, (0, 0))
     winner_panel = Panel((int(SCREEN_WIDTH / 2 - SCREEN_WIDTH / 2.5),
                           int(SCREEN_HEIGHT / 2 - SCREEN_WIDTH / 14)),
@@ -287,7 +296,7 @@ def main() -> None:
             board.draw(SCREEN_SURF)
 
             if winner == 'd':
-                winner_panel.draw(SCREEN_SURF, '       DRAW')
+                winner_panel.draw(SCREEN_SURF, '     DRAW')
             else:
                 winner_panel.draw(SCREEN_SURF, f'WINNER : {winner}')
 
